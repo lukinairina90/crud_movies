@@ -1,0 +1,384 @@
+definitions:
+  domain.Movie:
+    properties:
+      actors:
+        type: string
+      description:
+        type: string
+      genre:
+        type: string
+      name:
+        type: string
+      poster:
+        type: string
+      production_year:
+        type: integer
+    type: object
+  domain.SignInInput:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  domain.SignUpInput:
+    properties:
+      email:
+        type: string
+      name:
+        minLength: 2
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  rest.BadRequestErr:
+    properties:
+      code:
+        type: integer
+      fields:
+        additionalProperties:
+          type: string
+        type: object
+      message:
+        type: string
+    type: object
+  rest.InternalServerErr:
+    properties:
+      code:
+        type: integer
+      error:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API Server Movies Application
+  title: CRUD_movies
+  version: "1.0"
+paths:
+  /auth/refresh:
+    get:
+      consumes:
+      - application/json
+      description: returns accessToken and sets in cookies refresh-token
+      operationId: refresh
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+      summary: refresh
+      tags:
+      - auth
+  /auth/sign-in:
+    post:
+      consumes:
+      - application/json
+      description: login
+      operationId: login
+      parameters:
+      - description: credentials
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SignInInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: token
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+      summary: SignIn
+      tags:
+      - auth
+  /auth/sign-up:
+    post:
+      consumes:
+      - application/json
+      description: create account
+      operationId: create-account
+      parameters:
+      - description: account info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SignUpInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.SignUpInput'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+      summary: SignUp
+      tags:
+      - auth
+  /movies:
+    get:
+      consumes:
+      - application/json
+      description: get all movies
+      operationId: get-all-movies
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Movie'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.InternalServerErr'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/rest.InternalServerErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Get All Movies
+      tags:
+      - movies
+  /movies/:
+    post:
+      consumes:
+      - application/json
+      description: create movie
+      operationId: create-movie
+      parameters:
+      - description: movie description
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Movie'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Movie'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.InternalServerErr'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/rest.InternalServerErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Movie
+      tags:
+      - movies
+  /movies/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: delete movie by id
+      operationId: delete-movie
+      parameters:
+      - description: Movie ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Movie'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.InternalServerErr'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/rest.InternalServerErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete  Movie By ID
+      tags:
+      - movies
+    get:
+      consumes:
+      - application/json
+      description: get movie by id
+      operationId: get-movie
+      parameters:
+      - description: Movie ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Movie'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.InternalServerErr'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/rest.InternalServerErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Get  Movie By ID
+      tags:
+      - movies
+    put:
+      consumes:
+      - application/json
+      description: update movie by id
+      operationId: update-movie
+      parameters:
+      - description: Movie ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: movie description
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Movie'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Movie'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/rest.BadRequestErr'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rest.InternalServerErr'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/rest.InternalServerErr'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Movie By ID
+      tags:
+      - movies
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

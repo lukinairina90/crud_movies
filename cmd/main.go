@@ -3,41 +3,74 @@ package main
 import (
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/gin-gonic/gin"
+	"github.com/lukinairina90/crud_movies/internal/domain"
 	"github.com/lukinairina90/crud_movies/internal/repository"
 	"github.com/lukinairina90/crud_movies/internal/service"
 	"github.com/lukinairina90/crud_movies/internal/transport/rest"
 	"github.com/lukinairina90/crud_movies/pkg/config"
 	"github.com/lukinairina90/crud_movies/pkg/database"
+	"github.com/lukinairina90/crud_movies/pkg/hash"
+	"github.com/lukinairina90/in_memory_cache/generic_cache"
+	"github.com/sirupsen/logrus"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
-	"github.com/gin-gonic/gin"
+	_ "github.com/lukinairina90/crud_movies/docs"
 )
 
-func main() {
-	srv := gin.New()
+// @title CRUD_movies
+// @version 1.0
+// @description API Server Movies Application
 
+// @host localhost:8080
+// BasePath /
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+func main() {
 	cfg, err := config.Parse()
 	if err != nil {
 		logrus.Fatalf("error psring config: %s", err.Error())
 	}
 
+	// init db
 	db, err := database.CreateConn(cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPass, cfg.DBName, cfg.SSLMode)
 	if err != nil {
 		logrus.Fatalf("failed to connection db: %s", err.Error())
 	}
 
+	tokenSecret := []byte("sample secret")
+
+	defer db.Close()
+
+	// init deps
+	hasher := hash.NewMD5Hasher("salt")
+	movieCache := generic_cache.New[string, domain.Movie]()
+
 	movieRepository := repository.NewMovie(db)
-	movieService := service.NewMovie(movieRepository)
-	movieTransport := rest.NewMovie(movieService)
+	//cachedMovieRepo := repository.NewCachedMovie(movieRepository, movieCache)
 
-	srv.GET("/movies", movieTransport.List)
-	srv.GET("/movie/:id", movieTransport.Get)
-	srv.POST("/movie", movieTransport.Create)
-	srv.PUT("/movie/:id", movieTransport.Update)
-	srv.DELETE("/movie/:id", movieTransport.Delete)
+	movieService := service.NewMovie(movieRepository, movieCache)
+	moviesTransport := rest.NewMovie(movieService)
 
-	if err := srv.Run(fmt.Sprintf(":%s", cfg.Port)); err != nil {
+	usersRepository := repository.NewUsers(db)
+	tokensRepository := repository.NewTokens(db)
+	usersService := service.NewUsers(usersRepository, tokensRepository, hasher, tokenSecret, cfg.TokenTTL)
+
+	authTransport := rest.NewAuth(usersService)
+
+	// init routes
+	g := gin.New()
+	g.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	g.Use(rest.LoggingMiddleware())
+	authTransport.InjectRoutes(g)
+	moviesTransport.InjectRoutes(g, authTransport.AuthMiddleware())
+
+	fmt.Println("Server run...")
+	if err := g.Run(fmt.Sprintf(":%s", cfg.Port)); err != nil {
 		logrus.Fatalf("error occured while running http server %s", err.Error())
 	}
 }

@@ -40,3 +40,9 @@ curl --location --request PUT 'http://localhost:8080/movie/1' \
 ```bash
 curl --location --request DELETE 'http://localhost:8080/movie/1'
 ```
+
+## Swagger Documentation
+
+[Swagger documentation](http://localhost:8080/swagger/index.html)
+
+http://localhost:8080/swagger/index.html

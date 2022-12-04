@@ -6,13 +6,11 @@ import (
 	"net/http"
 	"strconv"
 
-	restErrors "github.com/lukinairina90/crud_movies/pkg/rest/errors"
-
 	"github.com/gin-gonic/gin"
 	"github.com/lukinairina90/crud_movies/internal/domain"
 )
 
-type MovieService interface {
+type Movies interface {
 	List(ctx context.Context) (domain.ListMovie, error)
 	Get(ctx context.Context, id int) (domain.Movie, error)
 	Create(ctx context.Context, movie domain.Movie) (domain.Movie, error)
@@ -20,29 +18,65 @@ type MovieService interface {
 	Delete(ctx context.Context, id int) error
 }
 
-type Movie struct {
-	movieService MovieService
-}
-
-func NewMovie(movieService MovieService) *Movie {
+func NewMovie(movieService Movies) *Movie {
 	return &Movie{movieService: movieService}
 }
 
-func (m Movie) List(ctx *gin.Context) {
+type Movie struct {
+	movieService Movies
+}
+
+func (m Movie) InjectRoutes(r *gin.Engine, middlewares ...gin.HandlerFunc) {
+	movies := r.Group("/movies").Use(middlewares...)
+	{
+		movies.GET("/", m.getAllMovies)
+		movies.GET("/:id", m.getMovie)
+		movies.POST("/", m.createMovie)
+		movies.PUT("/:id", m.updateMovie)
+		movies.DELETE("/:id", m.deleteMovie)
+	}
+}
+
+// @Summary Get All Movies
+// @Security ApiKeyAuth
+// @Tags movies
+// @Description get all movies
+// @ID get-all-movies
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} domain.ListMovie
+// @Failure 400,404 {object} BadRequestErr
+// @Failure 500 {object} InternalServerErr
+// @Failure default {object} InternalServerErr
+// @Router /movies [get]
+func (m Movie) getAllMovies(ctx *gin.Context) {
 	movies, err := m.movieService.List(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, restErrors.NewInternalServerErr())
+		ctx.JSON(http.StatusInternalServerError, NewInternalServerErr("transport | movieService.List error"))
 		return
 	}
 
 	ctx.JSON(http.StatusOK, movies)
 }
 
-func (m Movie) Get(ctx *gin.Context) {
+// @Summary Get  Movie By ID
+// @Security ApiKeyAuth
+// @Tags movies
+// @Description get movie by id
+// @ID get-movie
+// @Accept  json
+// @Produce  json
+// @Param id path int true "Movie ID"
+// @Success 200 {object} domain.Movie
+// @Failure 400,404 {object} BadRequestErr
+// @Failure 500 {object} InternalServerErr
+// @Failure default {object} InternalServerErr
+// @Router /movies/{id} [get]
+func (m Movie) getMovie(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		fields := map[string]string{"id": "should be an integer"}
-		ctx.JSON(http.StatusBadRequest, restErrors.NewBadRequestErr("validation error", fields))
+		ctx.JSON(http.StatusBadRequest, NewBadRequestErr("validation error", fields))
 		return
 	}
 
@@ -50,9 +84,9 @@ func (m Movie) Get(ctx *gin.Context) {
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
-			ctx.JSON(http.StatusNotFound, restErrors.NewNotFoundErr("movie not found"))
+			ctx.JSON(http.StatusNotFound, NewNotFoundErr("movie not found"))
 		default:
-			ctx.JSON(http.StatusInternalServerError, restErrors.NewInternalServerErr())
+			ctx.JSON(http.StatusInternalServerError, NewInternalServerErr("transport | movieService.Get error"))
 		}
 
 		return
@@ -61,55 +95,95 @@ func (m Movie) Get(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, movie)
 }
 
-func (m Movie) Create(ctx *gin.Context) {
+// @Summary Create Movie
+// @Security ApiKeyAuth
+// @Tags movies
+// @Description create movie
+// @ID create-movie
+// @Accept  json
+// @Produce  json
+// @Param input body domain.Movie true "movie description"
+// @Success 200 {object} domain.Movie
+// @Failure 400,404 {object} BadRequestErr
+// @Failure 500 {object} InternalServerErr
+// @Failure default {object} InternalServerErr
+// @Router /movies/ [post]
+func (m Movie) createMovie(ctx *gin.Context) {
 	var movie domain.Movie
 	if err := ctx.BindJSON(&movie); err != nil {
-		ctx.JSON(http.StatusBadRequest, restErrors.NewBadRequestErr("cannot parse body", nil))
+		ctx.JSON(http.StatusBadRequest, NewBadRequestErr("cannot parse body", nil))
 		return
 	}
 
 	createdMovie, err := m.movieService.Create(ctx, movie)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, restErrors.NewInternalServerErr())
+		ctx.JSON(http.StatusInternalServerError, NewInternalServerErr("transport | movieService.Create error"))
 		return
 	}
 
 	ctx.JSON(http.StatusCreated, createdMovie)
 }
 
-func (m Movie) Update(ctx *gin.Context) {
+// @Summary Update Movie By ID
+// @Security ApiKeyAuth
+// @Tags movies
+// @Description update movie by id
+// @ID update-movie
+// @Accept  json
+// @Produce  json
+// @Param id path int true "Movie ID"
+// @Param input body domain.Movie true "movie description"
+// @Success 200 {object} domain.Movie
+// @Failure 400,404 {object} BadRequestErr
+// @Failure 500 {object} InternalServerErr
+// @Failure default {object} InternalServerErr
+// @Router /movies/{id} [put]
+func (m Movie) updateMovie(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		fields := map[string]string{"id": "should be an integer"}
-		ctx.JSON(http.StatusBadRequest, restErrors.NewBadRequestErr("validation error", fields))
+		ctx.JSON(http.StatusBadRequest, NewBadRequestErr("validation error", fields))
 		return
 	}
 
 	var movie domain.Movie
 	if err := ctx.BindJSON(&movie); err != nil {
-		ctx.JSON(http.StatusBadRequest, restErrors.NewBadRequestErr("cannot parse body", nil))
+		ctx.JSON(http.StatusBadRequest, NewBadRequestErr("cannot parse body", nil))
 		return
 	}
 
 	updatedMovie, err := m.movieService.Update(ctx, id, movie)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, restErrors.NewInternalServerErr())
+		ctx.JSON(http.StatusInternalServerError, NewInternalServerErr("transport | movieService.Update error"))
 		return
 	}
 
 	ctx.JSON(http.StatusOK, updatedMovie)
 }
 
-func (m Movie) Delete(ctx *gin.Context) {
+// @Summary Delete  Movie By ID
+// @Security ApiKeyAuth
+// @Tags movies
+// @Description delete movie by id
+// @ID delete-movie
+// @Accept  json
+// @Produce  json
+// @Param id path int true "Movie ID"
+// @Success 200 {object} domain.Movie
+// @Failure 400,404 {object} BadRequestErr
+// @Failure 500 {object} InternalServerErr
+// @Failure default {object} InternalServerErr
+// @Router /movies/{id} [delete]
+func (m Movie) deleteMovie(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		fields := map[string]string{"id": "should be an integer"}
-		ctx.JSON(http.StatusBadRequest, restErrors.NewBadRequestErr("validation error", fields))
+		ctx.JSON(http.StatusBadRequest, NewBadRequestErr("validation error", fields))
 		return
 	}
 
 	if err := m.movieService.Delete(ctx, id); err != nil {
-		ctx.JSON(http.StatusInternalServerError, restErrors.NewInternalServerErr())
+		ctx.JSON(http.StatusInternalServerError, NewInternalServerErr("transport | movieService.Delete error"))
 		return
 	}
 

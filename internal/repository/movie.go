@@ -3,10 +3,9 @@ package repository
 import (
 	"context"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/lukinairina90/crud_movies/internal/domain"
 	"github.com/lukinairina90/crud_movies/internal/repository/models"
-
-	"github.com/jmoiron/sqlx"
 )
 
 type Movie struct {
@@ -80,3 +79,53 @@ func (m Movie) Delete(ctx context.Context, id int) error {
 	}
 	return nil
 }
+
+//const movieKeyPattern = "movie:%d"
+//
+//type CachedMovie struct {
+//	repo  *Movie
+//	cache *generic_cache.Cache[string, domain.Movie]
+//}
+//
+//func NewCachedMovie(repo *Movie, cache *generic_cache.Cache[string, domain.Movie]) *CachedMovie {
+//	return &CachedMovie{
+//		repo:  repo,
+//		cache: cache,
+//	}
+//}
+//
+//func (c CachedMovie) List(ctx context.Context) (domain.ListMovie, error) {
+//	return c.repo.List(ctx)
+//}
+//
+//func (c CachedMovie) Get(ctx context.Context, id int) (domain.Movie, error) {
+//	res, err := c.cache.Get(fmt.Sprintf(movieKeyPattern, id))
+//	if err != nil && err != generic_cache.ErrKeyNotFound {
+//		return domain.Movie{}, err
+//	}
+//
+//	if err == generic_cache.ErrKeyNotFound {
+//		res, err = c.repo.Get(ctx, id)
+//		if err != nil {
+//			return domain.Movie{}, err
+//		}
+//
+//		if err := c.cache.Set(fmt.Sprintf(movieKeyPattern, id), res, time.Minute); err != nil {
+//			return domain.Movie{}, err
+//		}
+//	}
+//
+//	return res, nil
+//}
+//
+//func (c CachedMovie) Create(ctx context.Context, movie domain.Movie) (domain.Movie, error) {
+//	return c.repo.Create(ctx, movie)
+//}
+//
+//func (c CachedMovie) Update(ctx context.Context, id int, movie domain.Movie) (domain.Movie, error) {
+//	return c.repo.Update(ctx, id, movie)
+//}
+//
+//func (c CachedMovie) Delete(ctx context.Context, id int) error {
+//	return c.repo.Delete(ctx, id)
+//}
