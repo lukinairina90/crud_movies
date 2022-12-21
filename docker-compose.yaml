@@ -43,9 +43,7 @@ services:
       DB_USER: postgres
       DB_PASS: goLANGninja
       DB_NAME: movies
-      DB_SSL_MODE: false
-      TOKEN_TTL: 24h
-      CACHE_TTL: 10m
+      SSL_MODE: false
     restart: on-failure
     depends_on:
       - db

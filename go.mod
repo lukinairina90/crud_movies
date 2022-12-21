@@ -9,14 +9,10 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.2.0
-	github.com/lukinairina90/crud_audit_log v0.0.0-20221219151100-3b58e98cb9b0
-	github.com/lukinairina90/in_memory_cache v0.0.0-20221121144838-5cb35efa6d78
 	github.com/sirupsen/logrus v1.9.0
 	github.com/swaggo/files v0.0.0-20220728132757-551d4a08d97a
 	github.com/swaggo/gin-swagger v1.5.3
 	github.com/swaggo/swag v1.8.8
-	google.golang.org/grpc v1.51.0
-	google.golang.org/protobuf v1.28.1
 )
 
 require (
@@ -29,10 +25,10 @@ require (
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/goccy/go-json v0.9.11 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
+	github.com/lukinairina90/in_memory_cache v0.0.0-20221121144838-5cb35efa6d78 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -44,7 +40,7 @@ require (
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/tools v0.3.0 // indirect
-	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

@@ -5,13 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/lukinairina90/crud_movies/internal/transport/rest"
 	"math/rand"
 	"strconv"
 	"time"
-
-	"github.com/lukinairina90/crud_audit_log/pkg/domain/audit"
-	"github.com/lukinairina90/crud_movies/internal/transport/rest"
-	"github.com/sirupsen/logrus"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/lukinairina90/crud_movies/internal/domain"
@@ -22,7 +19,7 @@ type PasswordHasher interface {
 }
 
 type UsersRepository interface {
-	Create(ctx context.Context, user domain.User) (int64, error)
+	Create(ctx context.Context, user domain.User) error
 	GetByCredentials(ctx context.Context, email, password string) (domain.User, error)
 }
 
@@ -35,10 +32,6 @@ type SessionRepository interface {
 	Get(ctx context.Context, token string) (domain.RefreshSession, error)
 }
 
-type AuditClient interface {
-	SendLogRequest(ctx context.Context, req audit.LogItem) error
-}
-
 type Users struct {
 	repo        UsersRepository
 	sessionRepo SessionRepository
@@ -46,23 +39,19 @@ type Users struct {
 
 	hmacSecret []byte
 	tokenTtl   time.Duration
-
-	auditClient AuditClient
 }
 
-func NewUsers(repo UsersRepository, sessionRepo SessionRepository, auditClient AuditClient, hasher PasswordHasher, hmacSecret []byte, tokenTtl time.Duration) *Users {
+func NewUsers(repo UsersRepository, sessionRepo SessionRepository, hasher PasswordHasher, hmacSecret []byte, tokenTtl time.Duration) *Users {
 	return &Users{
 		repo:        repo,
 		sessionRepo: sessionRepo,
 		hasher:      hasher,
 		hmacSecret:  hmacSecret,
 		tokenTtl:    tokenTtl,
-		auditClient: auditClient,
 	}
 }
 
 func (s *Users) SignUp(ctx context.Context, inp domain.SignUpInput) error {
-	var id int64
 	password, err := s.hasher.Hash(inp.Password)
 	if err != nil {
 		return err
@@ -75,23 +64,7 @@ func (s *Users) SignUp(ctx context.Context, inp domain.SignUpInput) error {
 		RegisteredAt: time.Now(),
 	}
 
-	id, err = s.repo.Create(ctx, user) // Сделай чтобы репа возвращала объект юзера уже с заполненным ID. Подсказка: RETURNING в SQL запросе
-	if err != nil {
-		return err
-	}
-
-	if err := s.auditClient.SendLogRequest(ctx, audit.LogItem{
-		Entity:    audit.ENTITY_USER,
-		Actions:   audit.ACTION_REGISTER,
-		EntityID:  id,
-		Timestamp: time.Now(),
-	}); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"method": "Users SignUp",
-		}).Error("failed to send log request:", err)
-	}
-
-	return nil
+	return s.repo.Create(ctx, user)
 }
 
 func (s *Users) SignIn(ctx context.Context, inp domain.SignInInput) (string, string, error) {
